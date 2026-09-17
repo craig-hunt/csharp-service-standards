@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Twelve-factor admin process: a separate executable applies migrations and
+       seeds demo data, so the API never migrates at startup. Compose runs this
+       once before the API starts. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ServiceStandards.Migrator</RootNamespace>
+    <AssemblyName>ServiceStandards.Migrator</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <!-- The EF tooling builds the model through this project, so the design
+         package belongs here rather than on Infrastructure, which ships. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <!-- Core Serilog, not Serilog.AspNetCore: this process has no web host, and
+         the ASP.NET Core dependency would demand the aspnet runtime image. -->
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+    <ProjectReference Include="..\..\analyzers\LiteralAnalyzer\LiteralAnalyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

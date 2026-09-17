@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Domain references nothing. An architecture test proves it, and this
+       file holding no PackageReference or ProjectReference is the first line of
+       that defense. -->
+  <PropertyGroup>
+    <RootNamespace>ServiceStandards.Domain</RootNamespace>
+    <AssemblyName>ServiceStandards.Domain</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\analyzers\LiteralAnalyzer\LiteralAnalyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Persistence is a trusted collaborator: it maps values the database has
+         already constrained. This grants it the non-validating identifier
+         factories and nothing else. -->
+    <InternalsVisibleTo Include="ServiceStandards.Infrastructure" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Application depends on Domain and on nothing infrastructural. Its ports
+       are interfaces the Infrastructure layer implements, so the dependency
+       arrow points inward. -->
+  <PropertyGroup>
+    <RootNamespace>ServiceStandards.Application</RootNamespace>
+    <AssemblyName>ServiceStandards.Application</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Domain\Domain.csproj" />
+    <ProjectReference Include="..\..\analyzers\LiteralAnalyzer\LiteralAnalyzer.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

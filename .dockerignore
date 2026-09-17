@@ -1,0 +1,15 @@
+# Build output and local state never belong in the build context: they slow the
+# transfer and can overwrite what the build stage just produced.
+**/bin/
+**/obj/
+**/StrykerOutput/
+**/TestResults/
+.git/
+.github/
+.vs/
+.vscode/
+tests/
+docs/
+*.md
+*.env
+**/appsettings.Development.json

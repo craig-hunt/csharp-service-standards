@@ -1,0 +1,57 @@
+<Project>
+
+  <!-- Central package management: one version per package for the whole
+       solution, so two projects cannot drift onto different builds of the same
+       dependency. Every version pins exactly. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Runtime">
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <!-- Abstractions only: Infrastructure contributes a hosted service, it does
+         not own a host. The composition root decides whether to run it. -->
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <!-- The migrator logs with core Serilog only. Taking Serilog.AspNetCore
+         there would pull the ASP.NET Core shared framework into an admin
+         process that serves nothing, and force its image onto a heavier base. -->
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup Label="Analyzers">
+    <!-- Roslyn pins to 5.0.0, the lowest version this analyzer must run inside
+         rather than the newest published. EF Core's design-time tooling pulls
+         Microsoft.CodeAnalysis.CSharp.Workspaces 5.0.0, which constrains the
+         Roslyn packages to exactly [5.0.0, 5.0.0]; a higher pin makes the
+         migrator unresolvable. Microsoft.CodeAnalysis.Analyzers versions on its
+         own 3.x line and is not part of that set. -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
+    <PackageVersion Include="xunit.v3" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.assert" Version="4.0.1" />
+    <!-- The VSTest adapter sits alongside xUnit v3's own platform support
+         rather than replacing it. Stryker drives tests through VSTest and
+         cannot see a Microsoft.Testing.Platform application, so the mutation
+         gate depends on this being present. -->
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+  </ItemGroup>
+
+</Project>
