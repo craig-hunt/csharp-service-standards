@@ -1,0 +1,158 @@
+# One authority on formatting: dotnet format reads this file, the build enforces
+# it through EnforceCodeStyleInBuild, and CI fails on any difference.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+max_line_length = 120
+
+# Allman braces, the C# convention.
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = true
+
+# Usings outside the namespace, sorted, System first.
+csharp_using_directive_placement = outside_namespace:error
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# File-scoped namespaces: one less level of indentation in every file.
+csharp_style_namespace_declarations = file_scoped:error
+
+# Modern language usage the standards require.
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_prefer_braces = true:error
+csharp_style_prefer_readonly_struct = true:suggestion
+
+dotnet_style_readonly_field = true:error
+dotnet_style_require_accessibility_modifiers = always:error
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_prefer_auto_properties = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+
+# Naming: interfaces carry I, types and members are PascalCase, private fields
+# carry a leading underscore.
+dotnet_naming_rule.interfaces_start_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_start_with_i.style = prefixed_with_i
+dotnet_naming_rule.interfaces_start_with_i.severity = error
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.prefixed_with_i.required_prefix = I
+dotnet_naming_style.prefixed_with_i.capitalization = pascal_case
+
+dotnet_naming_rule.types_are_pascal_case.symbols = type_symbols
+dotnet_naming_rule.types_are_pascal_case.style = pascal_case_style
+dotnet_naming_rule.types_are_pascal_case.severity = error
+dotnet_naming_symbols.type_symbols.applicable_kinds = class,struct,enum,delegate
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_have_underscore.symbols = private_field_symbols
+dotnet_naming_rule.private_fields_have_underscore.style = underscore_camel_case
+dotnet_naming_rule.private_fields_have_underscore.severity = error
+dotnet_naming_symbols.private_field_symbols.applicable_kinds = field
+dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+
+# StyleCop rules this project rejects, each for a stated reason.
+# SA1101: this. prefix adds noise without meaning.
+dotnet_diagnostic.SA1101.severity = none
+# SA1200: usings live outside the namespace, set above.
+dotnet_diagnostic.SA1200.severity = none
+# SA1633: file headers repeat what git records.
+dotnet_diagnostic.SA1633.severity = none
+# SA1309: private fields carry a leading underscore, set above.
+dotnet_diagnostic.SA1309.severity = none
+# SA1516: a blank line between every element fights file-scoped namespaces.
+dotnet_diagnostic.SA1516.severity = none
+# SA1600 and SA1602: comments explain why, so members carry no mandatory docs.
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1602.severity = none
+# SA1000: StyleCop 1.1.118 predates target-typed new, so it reads new() as a
+# keyword needing a trailing space. The syntax stays; the rule goes.
+dotnet_diagnostic.SA1000.severity = none
+# SA1313: StyleCop 1.1.118 predates records and reads a positional parameter as
+# a local. Those parameters become public properties, so PascalCase is correct.
+dotnet_diagnostic.SA1313.severity = none
+# SA1611 and SA1615: writing one summary should not oblige a param and returns
+# block for every argument. SA1600 already sets the stance: docs explain why.
+dotnet_diagnostic.SA1611.severity = none
+dotnet_diagnostic.SA1615.severity = none
+# SA1500: StyleCop 1.1.118 throws a null reference walking a collection
+# expression, and a crashed analyzer reports AD0001 rather than a finding.
+# Disabling the rule stops the crashing analyzer from running at all.
+dotnet_diagnostic.SA1500.severity = none
+# SA1010: the same vintage reads a collection expression as an indexer, so it
+# rejects the space in an assignment like = [].
+dotnet_diagnostic.SA1010.severity = none
+# SA1201: the element-order rule has no entry for a record declaration and
+# throws a key-not-found rather than reporting, which surfaces as AD0001. A
+# crashed analyzer checks nothing, so the rule goes rather than the records.
+# SA1202 and SA1204 still cover access and static ordering.
+dotnet_diagnostic.SA1201.severity = none
+
+# .NET analyzer rules this project rejects, each for a stated reason.
+# CA1062: nullable reference types reject a null argument at compile time, so a
+# runtime guard would add unreachable code to satisfy an older analysis model.
+dotnet_diagnostic.CA1062.severity = none
+# CA1032: the standard message-only and parameterless exception constructors
+# would build a domain exception carrying no code and no field problems, which
+# is the one state this hierarchy exists to prevent.
+dotnet_diagnostic.CA1032.severity = none
+
+[tests/**/*.cs]
+# Test projects name their own literals through constants classes, and the
+# analyzer covers them, so no rule loosens here.
+dotnet_diagnostic.SA1118.severity = none
+# CA1515: a test project builds as an executable, which is what this rule
+# targets, and the runner discovers only public classes. Fixtures stay public
+# so they keep running.
+dotnet_diagnostic.CA1515.severity = none
+# CA2007: the rule prevents deadlocks on a synchronization context, and a test
+# runner has none. ConfigureAwait on every await here changes no behavior and
+# costs readability in the files people read most often to learn the codebase.
+dotnet_diagnostic.CA2007.severity = none
+
+# EF writes the migration files and rewrites them whenever the model changes, so
+# they are generated artifacts rather than authored code. Hand-editing one to
+# satisfy a style rule loses the edit on the next scaffold. Marking them
+# generated is what activates the analyzer's own generated-code setting.
+[**/Migrations/*.cs]
+generated_code = true

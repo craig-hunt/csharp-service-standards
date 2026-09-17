@@ -1,0 +1,47 @@
+# The whole stack on one command. The migrator runs to completion before the API
+# starts, so the API never migrates at startup and never races a second replica
+# doing the same thing.
+
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: servicestandards
+      POSTGRES_USER: servicestandards
+      # Local development only. A deployed environment supplies its own.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-servicestandards}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U servicestandards -d servicestandards"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    ports:
+      - "5432:5432"
+
+  migrator:
+    build:
+      context: .
+      target: migrator
+    environment:
+      ConnectionStrings__Default: Host=db;Database=servicestandards;Username=servicestandards;Password=${POSTGRES_PASSWORD:-servicestandards}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      target: web
+    environment:
+      ConnectionStrings__Default: Host=db;Database=servicestandards;Username=servicestandards;Password=${POSTGRES_PASSWORD:-servicestandards}
+      ASPNETCORE_HTTP_PORTS: 8080
+      # Local development only, and overridable. The service refuses to start
+      # without both, so an empty placeholder can never leave the token check
+      # accepting every caller.
+      Api__Token: ${API_TOKEN:-local-development-token}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-local-development-signing-key-not-for-deployment}
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrator:
+        condition: service_completed_successfully

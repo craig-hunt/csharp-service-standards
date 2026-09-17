@@ -1,0 +1,30 @@
+# Build output
+bin/
+obj/
+artifacts/
+
+# Mutation testing reports
+StrykerOutput/
+
+# Test results
+TestResults/
+*.trx
+coverage*.xml
+coverage*.json
+
+# Secrets never live in the repository. Real values sit in user secrets or the
+# environment; these catch a stray copy.
+*.env
+.env
+.env.*
+appsettings.Development.json
+appsettings.Local.json
+
+# IDE and OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

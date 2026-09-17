@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/src/Stryker.Core/Stryker.Core/Schema/stryker-schema.json",
+  "stryker-config": {
+    "solution": "CsharpServiceStandards.slnx",
+    "mutate": [
+      "**/src/Domain/**/*.cs",
+      "**/src/Application/**/*.cs"
+    ],
+    "test-projects": [
+      "tests/Domain.Tests/Domain.Tests.csproj",
+      "tests/Application.Tests/Application.Tests.csproj"
+    ],
+    "coverage-analysis": "off",
+    "thresholds": {
+      "high": 85,
+      "low": 75,
+      "break": 70
+    },
+    "reporters": [
+      "progress",
+      "html",
+      "json"
+    ],
+    "mutation-level": "Standard"
+  }
+}

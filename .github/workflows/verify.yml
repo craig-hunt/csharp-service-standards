@@ -1,0 +1,100 @@
+# Four jobs run on every pull request. They are separate rather than one long
+# script so a failure names itself: a red "mutation" job says the tests are thin,
+# a red "build" job says the code does not compile or does not meet the style
+# the build enforces. Each reports independently instead of hiding behind
+# whichever step failed first.
+
+name: verify
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  CONFIGURATION: Release
+
+jobs:
+  build:
+    name: build and style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: restore
+        run: dotnet restore
+      # Warnings are errors and EnforceCodeStyleInBuild is on, so a formatting
+      # slip and an unused variable both fail here rather than in review.
+      - name: build
+        run: dotnet build --configuration $CONFIGURATION --no-restore
+
+  test:
+    name: unit, architecture, analyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: build
+        run: dotnet build --configuration $CONFIGURATION
+      # Each suite is an executable on Microsoft.Testing.Platform. dotnet test
+      # reports zero tests for these projects on the .NET 10 SDK, so they run
+      # directly, which is xUnit v3's documented path.
+      - name: domain
+        run: dotnet run --project tests/Domain.Tests/Domain.Tests.csproj --configuration $CONFIGURATION --no-build
+      - name: application
+        run: dotnet run --project tests/Application.Tests/Application.Tests.csproj --configuration $CONFIGURATION --no-build
+      - name: architecture
+        run: dotnet run --project tests/Architecture.Tests/Architecture.Tests.csproj --configuration $CONFIGURATION --no-build
+      - name: analyzer
+        run: dotnet run --project tests/Analyzer.Tests/Analyzer.Tests.csproj --configuration $CONFIGURATION --no-build
+      - name: web
+        run: dotnet run --project tests/Web.Tests/Web.Tests.csproj --configuration $CONFIGURATION --no-build
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: build
+        run: dotnet build --configuration $CONFIGURATION
+      # Testcontainers starts and removes its own PostgreSQL, so the schema, the
+      # check constraints, and the EF mapping are exercised as the database
+      # enforces them rather than as a fake pretends.
+      - name: integration
+        run: dotnet run --project tests/Integration.Tests/Integration.Tests.csproj --configuration $CONFIGURATION --no-build
+
+  mutation:
+    name: mutation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      # The tool manifest pins the versions, so CI and a developer's machine run
+      # the same mutation engine rather than whatever latest happens to be.
+      - name: restore tools
+        run: dotnet tool restore
+      # Coverage says a line ran. Mutation says a test would notice if that line
+      # were wrong. The threshold in stryker-config.json fails this job below 70.
+      - name: mutate domain and application
+        run: dotnet stryker
+      - name: upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: StrykerOutput/**/reports/**
+          if-no-files-found: ignore
