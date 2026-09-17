@@ -61,6 +61,15 @@ var signingKey = Required(
     builder.Configuration[WebConstants.ConfigJwtSigningKey],
     WebConstants.MsgMissingSigningKey);
 
+// One header carries both credentials, and the scheme is chosen by the shape of
+// the token. A static token holding periods could take the shape of a JSON Web
+// Token, so the service refuses one rather than routing it to a scheme that can
+// never accept it.
+if (apiToken.Contains(WebConstants.JwtSeparator, StringComparison.Ordinal))
+{
+    throw new InvalidOperationException(WebConstants.MsgTokenHasSeparator);
+}
+
 static string Required(string? value, string message) =>
     string.IsNullOrWhiteSpace(value) ? throw new InvalidOperationException(message) : value;
 
@@ -70,8 +79,7 @@ builder.Services
     .AddAuthentication(WebConstants.SchemeSelector)
     .AddPolicyScheme(WebConstants.SchemeSelector, WebConstants.SchemeSelector, options =>
         options.ForwardDefaultSelector = context =>
-            context.Request.Headers[WebConstants.HeaderAuthorization].ToString()
-                .Count(character => character == WebConstants.JwtSeparator) == WebConstants.JwtSegmentCount - 1
+            BearerToken.LooksLikeJsonWebToken(context)
                 ? JwtBearerDefaults.AuthenticationScheme
                 : WebConstants.SchemeStaticToken)
     .AddJwtBearer(options =>

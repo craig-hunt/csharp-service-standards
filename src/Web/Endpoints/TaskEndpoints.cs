@@ -50,7 +50,12 @@ internal static class TaskEndpoints
         var created = await tasks.CreateAsync(TaskTitle.From(body.Title), cancellationToken)
             .ConfigureAwait(false);
 
-        return Results.Created(WebConstants.PathTasks, TaskResponse.From(created));
+        // 201 without a Location header. A location has to address the created
+        // resource, and this API defines no route that serves one task, so
+        // pointing at the collection would hand a client an address that does
+        // not return what it just created. The sibling Go project answers the
+        // same way, so the two stay at parity.
+        return Results.Json(TaskResponse.From(created), statusCode: StatusCodes.Status201Created);
     }
 
     private static async Task<IResult> UpdateAsync(

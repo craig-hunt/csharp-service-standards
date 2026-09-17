@@ -1,26 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ServiceStandards.Application.Abstractions;
-using ServiceStandards.Infrastructure.Persistence;
 
 namespace ServiceStandards.Infrastructure.Events;
 
 /// <summary>
-/// Publishes what the outbox holds, then records that it did.
+/// Wakes on a timer and asks the publisher to drain the outbox.
 /// </summary>
 /// <remarks>
-/// Publishing after the commit rather than during it is what makes delivery
-/// at-least-once: the relay can deliver a message and fail before marking it,
-/// and the next pass delivers it again. That trade is deliberate. The
-/// alternative, marking first, loses messages instead, and a lost message is
-/// worse than a repeated one for every consumer written to absorb repeats.
-///
-/// This reference runs the relay inside the API. A deployment with more than
-/// one replica would run it as its own process, or claim rows with a row lock,
-/// so two replicas never publish the same message.
+/// Scheduling only. The delivery rules live in OutboxPublisher, which a test
+/// drives directly rather than through a background service and a clock.
 /// </remarks>
 [SuppressMessage(
     "Performance",
@@ -29,8 +19,6 @@ namespace ServiceStandards.Infrastructure.Events;
 internal sealed partial class OutboxRelay(IServiceScopeFactory scopes, ILogger<OutboxRelay> logger)
     : BackgroundService
 {
-    private const int Empty = 0;
-
     private static readonly TimeSpan PollInterval =
         TimeSpan.FromSeconds(InfrastructureConstants.OutboxPollSeconds);
 
@@ -38,7 +26,7 @@ internal sealed partial class OutboxRelay(IServiceScopeFactory scopes, ILogger<O
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await PublishPendingAsync(stoppingToken).ConfigureAwait(false);
+            await PublishOnceAsync(stoppingToken).ConfigureAwait(false);
 
             try
             {
@@ -60,40 +48,14 @@ internal sealed partial class OutboxRelay(IServiceScopeFactory scopes, ILogger<O
     [SuppressMessage(
         "Design",
         "CA1031:Do not catch general exception types",
-        Justification = "A relay pass that fails must not end the background service; the next pass retries the same rows, which is exactly what at-least-once delivery relies on.")]
-    private async Task PublishPendingAsync(CancellationToken cancellationToken)
+        Justification = "A pass that fails must not end the background service; the next pass retries the same rows, which is what at-least-once delivery relies on.")]
+    private async Task PublishOnceAsync(CancellationToken cancellationToken)
     {
         try
         {
             using var scope = scopes.CreateScope();
-            var database = scope.ServiceProvider.GetRequiredService<ServiceStandardsDbContext>();
-            var dispatcher = scope.ServiceProvider.GetRequiredService<IEventDispatcher>();
-            var clock = scope.ServiceProvider.GetRequiredService<IClock>();
-
-            var pending = await database.OutboxMessages
-                .Where(row => row.PublishedAt == null)
-                .OrderBy(row => row.OccurredAt)
-                .Take(InfrastructureConstants.OutboxBatchSize)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            if (pending.Count == Empty)
-            {
-                return;
-            }
-
-            foreach (var row in pending)
-            {
-                var message = OutboxSerializer.FromRow(row);
-                if (message is not null)
-                {
-                    await dispatcher.DispatchAsync(message, cancellationToken).ConfigureAwait(false);
-                }
-
-                row.PublishedAt = clock.UtcNow;
-            }
-
-            await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            var publisher = scope.ServiceProvider.GetRequiredService<OutboxPublisher>();
+            await publisher.PublishPendingAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception failure)
         {

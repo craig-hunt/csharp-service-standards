@@ -90,6 +90,10 @@ try {
     }
 
     if (-not $SkipMutation) {
+        # The mutation engine comes from the tool manifest rather than the
+        # machine, so a clean checkout has to restore it before the command
+        # exists at all.
+        Invoke-Step 'restore tools' { dotnet tool restore }
         Invoke-Step 'mutation' { dotnet stryker }
     }
     else {

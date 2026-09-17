@@ -31,6 +31,8 @@ internal static class WebConstants
     public const string MsgNotReady = "readiness check failed";
     public const string MsgMissingConnection = "the service needs a connection string named Default";
     public const string MsgMissingToken = "the service needs an API token";
+    public const string MsgTokenHasSeparator =
+        "the API token must not contain a period, which would make it indistinguishable from a JSON Web Token";
     public const string MsgMissingSigningKey = "the service needs a JWT signing key";
 
     public const string ContentTypeProblem = "application/problem+json";

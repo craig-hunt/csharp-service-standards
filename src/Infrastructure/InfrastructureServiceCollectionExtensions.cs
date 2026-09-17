@@ -30,6 +30,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IClock, SystemClock>();
         services.AddScoped<IEventDispatcher, EventDispatcher>();
         services.AddScoped<IEventConsumer, SignupRecordedConsumer>();
+        services.AddScoped<OutboxPublisher>();
         return services;
     }
 

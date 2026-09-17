@@ -54,6 +54,15 @@ public static class InfrastructureConstants
     public const int OutboxBatchSize = 50;
     public const int OutboxPollSeconds = 2;
     public const string MsgOutboxPublishFailed = "outbox publish failed";
+    public const string MsgOutboxUnknownType =
+        "outbox message {EventId} holds unknown type {Type} and stays unpublished";
+
+    // SKIP LOCKED lets a second relay take a different batch rather than the
+    // same one. The limit binds as a parameter; the identifiers stay literal
+    // because a parameter cannot name a table or a column.
+    public const string SqlClaimOutbox =
+        "SELECT * FROM outbox_messages WHERE published_at IS NULL " +
+        "ORDER BY occurred_at LIMIT {0} FOR UPDATE SKIP LOCKED";
 
     // Every argument a logging message carries has to appear in its template.
     // The generator rejects a parameter the message never names, which is what

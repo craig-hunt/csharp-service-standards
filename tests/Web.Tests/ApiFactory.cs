@@ -89,7 +89,28 @@ public sealed class FakeTaskStore : ITaskStore
         ClearResult = 0;
     }
 
-    public void Seed(params TaskItem[] items) => _items.AddRange(items);
+    /// <summary>
+    /// Adds rows as though the store already held them.
+    /// </summary>
+    /// <remarks>
+    /// Seeding advances the next identifier past everything it added. A real
+    /// store reads its next value from an identity column and never reissues
+    /// one; a fake that restarts at one would hand a created task the same
+    /// identifier as a seeded task and hide exactly the duplicate-identifier
+    /// and location defects these tests exist to catch.
+    /// </remarks>
+    public void Seed(params TaskItem[] items)
+    {
+        _items.AddRange(items);
+
+        foreach (var item in items)
+        {
+            if (item.Id.Value >= _nextId)
+            {
+                _nextId = item.Id.Value + 1;
+            }
+        }
+    }
 
     public Task<IReadOnlyList<TaskItem>> ListAsync(CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<TaskItem>>(_items);

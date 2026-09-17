@@ -22,8 +22,10 @@ public sealed class OutboxTests(PostgresFixture fixture)
     private const string FirstEmail = "outbox-one@example.com";
     private const string SecondEmail = "outbox-two@example.com";
     private const string Notes = "Checking the outbox.";
+    private const string RolledBackEmail = "outbox-rolled-back@example.com";
     private const int Seats = 4;
     private const long NoIdentifier = 0;
+    private const int NoRows = 0;
 
     [Fact]
     public async Task SavingASignupWritesOneUnpublishedMessage()
@@ -80,6 +82,27 @@ public sealed class OutboxTests(PostgresFixture fixture)
             .CountAsync(row => row.Payload.Contains(FirstEmail), TestContext.Current.CancellationToken);
 
         Assert.Equal(signups, messages);
+    }
+
+    [Fact]
+    public async Task AFailureAfterTheSignupSaveLeavesNoRowBehind()
+    {
+        await using var database = fixture.CreateContext();
+        var store = new EfSignupStore(database, new ThrowingClock());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            store.SaveAsync(Sample(RolledBackEmail), TestContext.Current.CancellationToken));
+
+        await using var reader = fixture.CreateContext();
+        var signups = await reader.Signups
+            .AsNoTracking()
+            .CountAsync(row => row.Email == RolledBackEmail, TestContext.Current.CancellationToken);
+        var messages = await reader.OutboxMessages
+            .AsNoTracking()
+            .CountAsync(row => row.Payload.Contains(RolledBackEmail), TestContext.Current.CancellationToken);
+
+        Assert.Equal(NoRows, signups);
+        Assert.Equal(NoRows, messages);
     }
 
     private static Signup Sample(string email) =>
